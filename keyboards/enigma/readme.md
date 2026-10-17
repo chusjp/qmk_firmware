@@ -1,40 +1,35 @@
 # enigma
 
-A 2x3 macropad built around a Raspberry Pi Pico, with a 128x64 I2C OLED
-that solves the usual macropad problem: forgetting what each key does.
-Hold the info key and press any other key to see its name on screen,
-full-screen and large; let go to go back to the idle overview. Up to 4
-macro layers are supported, switched by holding two keys together, with
-the current layer always shown on-screen.
+A minimal macropad laid out like a slice of a keyboard: a 128x64 I2C
+OLED set into the case bezel where the top row's first key would be,
+six 1u MX keys, and an ISO Enter.
 
 * Keyboard Maintainer: [Chus Jara Peinado](https://github.com/chusjp)
-* Hardware Supported: Raspberry Pi Pico (RP2040), SSD1306 128x64 I2C OLED
-* Hardware Availability: custom build — see [hardware/](hardware/) for
-  the KiCad schematic/PCB and [keymaps/default/](keymaps/default/) for
-  wiring notes
+* Hardware Supported: enigma v3 PCB — bare RP2040 with USB-C, MX
+  hotswap sockets, SSD1306 128x64 I2C OLED
+* Hardware Availability: custom build; the KiCad PCB and FreeCAD case are
+  kept outside this repo
 
 ## Layout
 
 ```
-┌───┬───┬───┐
-│ A │ B │ C │
-├───┼───┼───┤
-│ D │ E │ F │  <- F: tap = KC_F, hold = show info for the key you press next
-└───┴───┴───┘
+┌───────────┬───┬───┬───────┐
+│   OLED    │ A │ B │       │
+├───┬───┬───┴┬──┴┬──┴┐ Enter │
+│ C │ D │ E  │ F │   │       │
+└───┴───┴────┴───┘   └───────┘
 ```
 
-A-E each run a configurable macro. Hold F and press any of A-E to see
-its name on the OLED instead of running it; release to return to the
-idle screen. Hold A+B together (F not required) to cycle to the next
-macro layer — see [keymaps/default/README.md](keymaps/default/README.md)
-for how to edit macros, names, and layers via `macros.json`.
+The `default` keymap types A-F and Enter, and the OLED shows the
+current layer. It is meant as a clean starting point for your own keymap.
 
 ## Hardware
 
-Designed around a socketed Pi Pico rather than a bare RP2040, so it can
-be reflashed/replaced without desoldering. See
-[hardware/README.md](hardware/README.md) for the KiCad project (verified
-with `kicad-cli`, ERC/DRC clean) and what's still left to do (routing).
+Each switch is wired straight to its own RP2040 pin (direct pins, no
+matrix or diodes): A=GP9, B=GP7, Enter=GP5, C=GP11, D=GP10, E=GP8,
+F=GP6. The OLED is on I2C0 (SDA=GP12, SCL=GP13), cabled to a JST-SH (Qwiic)
+connector on the PCB and mounted upside down (header toward the keys), so
+the firmware rotates the image 180°.
 
 Make example for this keyboard (after setting up your build environment):
 
@@ -48,11 +43,12 @@ See the [build environment setup](https://docs.qmk.fm/#/getting_started_build_to
 
 ## Bootloader
 
-No key currently sends `QK_BOOT`, so the reliable way to reflash is the
-Pico module's own hardware BOOTSEL button:
+* **Double-tap RESET**: the board's RESET button, pressed twice quickly,
+  drops into the UF2 bootloader (`RP2040_BOOTLOADER_DOUBLE_TAP_RESET`)
+* **BOOT button**: hold BOOT while pressing RESET (or while plugging in)
+* **Bootmagic reset**: hold down key A (matrix position 0,0) while
+  plugging in the keyboard
+* A factory-fresh board with empty flash shows up as the `RPI-RP2`
+  drive by itself — drag the `.uf2` onto it
 
-* **BOOTSEL button**: hold the button on the Pico itself while plugging
-  in USB, then flash the `.uf2` normally (`qmk flash`, or drag-and-drop
-  onto the `RPI-RP2` drive it exposes)
-* **Bootmagic reset**: hold down key A (matrix position 0,0, top-left)
-  while plugging in the keyboard
+The BOOT and RESET buttons are on the underside of the PCB.
